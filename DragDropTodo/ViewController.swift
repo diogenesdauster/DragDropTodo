@@ -40,7 +40,7 @@ class ViewController: UIViewController {
         
     }
     
-    func getDateSourcePriority(for tableView: UITableView) -> TodoList.Priority {
+    func getDataSourcePriority(for tableView: UITableView) -> TodoList.Priority {
         
         if tableView == self.topTableView {
             return TodoList.Priority.high
@@ -48,7 +48,7 @@ class ViewController: UIViewController {
             return TodoList.Priority.low
         }
     }
-        
+    
 }
 
 
@@ -56,7 +56,7 @@ extension ViewController: UITableViewDragDelegate {
     
     func tableView(_ tableView: UITableView, itemsForBeginning session: UIDragSession, at indexPath: IndexPath) -> [UIDragItem] {        
         
-        let priority = self.getDateSourcePriority(for: tableView)
+        let priority = self.getDataSourcePriority(for: tableView)
         return todoList.dragItems(for: indexPath, on: priority)
     }
     
@@ -71,7 +71,7 @@ extension ViewController: UITableViewDropDelegate {
     
     // this method makes the animation and the drop become more confortable for the user
     func tableView(_ tableView: UITableView, dropSessionDidUpdate session: UIDropSession, withDestinationIndexPath destinationIndexPath: IndexPath?) -> UITableViewDropProposal {
-    
+        
         if tableView.hasActiveDrag {
             if session.items.count > 1 {
                 return UITableViewDropProposal(operation: .cancel)
@@ -82,11 +82,11 @@ extension ViewController: UITableViewDropDelegate {
             return UITableViewDropProposal(operation: .copy, intent: .insertAtDestinationIndexPath)
         }
     }
-
+    
     
     func tableView(_ tableView: UITableView, performDropWith coordinator: UITableViewDropCoordinator) {
         let destinationIndexPath: IndexPath
-
+        
         if let indexPath = coordinator.destinationIndexPath {
             destinationIndexPath = indexPath
         } else {
@@ -96,25 +96,36 @@ extension ViewController: UITableViewDropDelegate {
             destinationIndexPath = IndexPath(row: row, section: section)
         }
         
-        let priority = getDateSourcePriority(for: tableView)
-        var indexPaths: [IndexPath] = []
+        let priority = getDataSourcePriority(for: tableView)
         
         for item in coordinator.items {
-            if let sourceIndexPath = item.dragItem.localObject as? IndexPath {
-                todoList.move(priority, at: sourceIndexPath.row, to: destinationIndexPath.row)
-                indexPaths.append(sourceIndexPath)
+            
+            if let srcindexPath = item.sourceIndexPath {
+            
+                todoList.moveItem(priority, at: srcindexPath.row, to: destinationIndexPath.row)
+                tableView.beginUpdates()
+                tableView.deleteRows(at: [srcindexPath], with: .automatic)
+                tableView.insertRows(at: [destinationIndexPath], with: .automatic)
+                tableView.endUpdates()
+            
+            } else {
+                
+                if let sourceIndexPath = item.dragItem.localObject as? IndexPath {
+                    todoList.move(priority, at: sourceIndexPath.row, to: destinationIndexPath.row)
+                    
+                    if tableView == topTableView {
+                        bottomTableView.deleteRows(at: [sourceIndexPath], with: .automatic)
+                    } else {
+                        topTableView.deleteRows(at: [sourceIndexPath], with: .automatic)
+                    }
+                    
+                    tableView.insertRows(at: [destinationIndexPath], with: .automatic)
+                    
+                }
             }
+            
         }
         
-        if tableView == topTableView {
-            //bottomTableView.reloadData()
-            bottomTableView.deleteRows(at: indexPaths, with: .automatic)
-        } else {
-            //topTableView.reloadData()
-            topTableView.deleteRows(at: indexPaths, with: .automatic)
-        }
-        
-        tableView.insertRows(at: [destinationIndexPath], with: .automatic)
         
     }
     
@@ -124,13 +135,13 @@ extension ViewController: UITableViewDropDelegate {
 extension ViewController: UITableViewDataSource{
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        let priority = self.getDateSourcePriority(for: tableView)
+        let priority = self.getDataSourcePriority(for: tableView)
         return todoList.todoList(priority: priority).count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let priority = self.getDateSourcePriority(for: tableView)
+        let priority = self.getDataSourcePriority(for: tableView)
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
         cell.textLabel?.text = todoList.todoList(priority: priority)[indexPath.row]
         

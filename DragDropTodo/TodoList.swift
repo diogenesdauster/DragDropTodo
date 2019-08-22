@@ -73,6 +73,20 @@ struct TodoList {
 
     }
     
+    mutating func moveItem(_ priority: Priority,at sourceIndex: Int, to destinationIndex: Int) {
+        
+        switch priority {
+        case .high:
+            let todo = highPriority.remove(at: sourceIndex)
+            highPriority.insert(todo, at: destinationIndex)
+        case .low:
+            let todo = lowPriority.remove(at: sourceIndex)
+            lowPriority.insert(todo, at: destinationIndex)
+            
+        }
+        
+    }
+    
     mutating func move(_ priority: Priority,at sourceIndex: Int, to destinationIndex: Int) {
         
         switch priority {
